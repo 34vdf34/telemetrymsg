@@ -145,6 +145,7 @@ int main(int argc, char *argv[]) {
 	char *ini_file=NULL;
 	int log_level=LOG_INFO;
 	char *server_port=NULL;
+	char *server_bind_ip=NULL;
 	/* ini-file */
 	while ((c = getopt (argc, argv, "dhi:")) != -1)
 	switch (c)
@@ -181,7 +182,8 @@ int main(int argc, char *argv[]) {
 		return 0;
 	}
 	ini_sget(config, "server", "server_port", NULL, &server_port);
-	log_info("[%d] Server port %s",getpid(),server_port);
+	ini_sget(config, "server", "server_bind_ip", NULL, &server_bind_ip);
+	log_info("[%d] Binding to %s:%s",getpid(),server_bind_ip,server_port);
 	
     int port = atoi(server_port);
     struct sockaddr_in servaddr;
@@ -197,7 +199,7 @@ int main(int argc, char *argv[]) {
 
     bzero(&servaddr, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
-    servaddr.sin_addr.s_addr = htonl(INADDR_ANY);       
+    servaddr.sin_addr.s_addr = inet_addr(server_bind_ip);       
     servaddr.sin_port = htons(port);
 
 	if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int)) < 0)
