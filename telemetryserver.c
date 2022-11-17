@@ -62,6 +62,7 @@
 #define MESSAGE_FIFO_OUT					"/tmp/message_fifo_out" 
 #define FIFO_BUFFER_SIZE					210
 
+
 void write_fifo_out(char *message)
 {
 	int fd;
@@ -96,6 +97,28 @@ int check_call_status_from_client_role() {
         return CLIENT_ROLE_CALL_INACTIVE;
     }
     return 0;
+}
+
+void set_call_status(int status) {
+
+	FILE *file;
+	int write_status=0;
+	char buf[1];
+	
+	if (status == STATE_BUSY)
+	{
+		file = fopen(CLIENT_ROLE_CALL_FILENAME, "w");
+		memset(buf,0,1);
+		write_status = write(file, buf, strlen(buf));
+		if (write_status == -1 )
+			log_error("[%d] unable to write status file",getpid());
+		fsync(file); 
+		close(file);
+	} else {
+		if (remove(CLIENT_ROLE_CALL_FILENAME) != 0) {
+			log_error("[%d] unable to remove status file",getpid());
+		}
+	}
 }
 
 int run_receive_command(int id, int cmd_code) {
@@ -140,7 +163,7 @@ int run_receive_command(int id, int cmd_code) {
 }
 
 int main(int argc, char *argv[]) {	
-	int node_state=STATE_AVAILABLE;
+	// int node_state=STATE_AVAILABLE;
 	int c=0;
 	char *ini_file=NULL;
 	int log_level=LOG_INFO;
@@ -275,25 +298,20 @@ int main(int argc, char *argv[]) {
 				sprintf(response,"busy");
 			}
 			if ( check_call_status_from_client_role() == CLIENT_ROLE_CALL_INACTIVE ) {
-				sprintf(response,"available");
-			
-				if ( node_state == STATE_AVAILABLE ) 
-					sprintf(response,"available");
-				if ( node_state == STATE_BUSY ) 
-					sprintf(response,"busy");
+				sprintf(response,"available");	
 			}		
 		}
-		if ( strcmp(command_code,"prepare") == 0 && node_state == STATE_AVAILABLE ) {
+		if ( strcmp(command_code,"prepare") == 0 && check_call_status_from_client_role() == CLIENT_ROLE_CALL_INACTIVE ) {
 			log_info("[%d] prepare command  ",getpid() );
 			run_receive_command(id_code, PREPARE_CMD);
 			sprintf(response,"prepare_ready");
-			node_state = STATE_BUSY;
+			set_call_status(STATE_BUSY);
 		}
 		if ( strcmp(command_code,"terminate") == 0 ) {
 			log_info("[%d] terminate command  ",getpid() );
 			run_receive_command(id_code, TERMINATE_CMD);
 			sprintf(response,"terminate_ready");
-			node_state = STATE_AVAILABLE;
+			set_call_status(STATE_AVAILABLE);
 		}
 		if ( strcmp(command_code,"no_answer") == 0 ) {
 			log_info("[%d] no_answer command  ",getpid() );
@@ -306,10 +324,10 @@ int main(int argc, char *argv[]) {
 			sprintf(response,"answer_ready");
 		}
 		if ( strcmp(command_code,"hangup") == 0 ) {
-			log_info("[%d] no_answer command  ",getpid() );
+			log_info("[%d] hangup command  ",getpid() );
 			run_receive_command(id_code, REMOTE_HANGUP_CMD);
 			sprintf(response,"hangup_ready");
-			node_state = STATE_AVAILABLE;
+			set_call_status(STATE_AVAILABLE);
 		}
 		if ( strcmp(command_code,"ring") == 0 ) {
 			log_info("[%d] ring command  ",getpid() );

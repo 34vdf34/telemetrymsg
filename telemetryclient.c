@@ -3,7 +3,7 @@
  *                    to send and receive messages.
  *
  *  Copyright (C) 2022 Resilience Theatre
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -44,16 +44,18 @@
 
 #define MSG_SIZE 			300
 #define FIFO_SIZE 			300 
-#define IP_BUF_SIZE 		15
-#define PAYLOAD_MSG_SIZE 	250
-#define BUFSIZE 128
-#define PREPARE_CMD 						1
-#define TERMINATE_CMD						2
-#define ESTABLISH_AUDIO_AS_CLIENT_CMD		3
-#define ESTABLISH_AUDIO_AS_SERVER_CMD		4
-#define DISCONNECT_AUDIO_CMD				5
-#define DISCONNECT_CMD 						6
-#define NOTIFY_BEEP_CMD						7
+#define IP_BUF_SIZE 			15
+#define PAYLOAD_MSG_SIZE 		250
+#define BUFSIZE 			128
+#define PREPARE_CMD 			1
+#define TERMINATE_CMD			2
+#define ESTABLISH_AUDIO_AS_CLIENT_CMD	3
+#define ESTABLISH_AUDIO_AS_SERVER_CMD	4
+#define DISCONNECT_AUDIO_CMD		5
+#define DISCONNECT_CMD 			6
+#define NOTIFY_BEEP_CMD			7
+#define TERMINATE_LOCAL_CMD		8
+
 
 void write_fifo_out(char *message)
 {
@@ -214,13 +216,16 @@ int run_local_command(int cmd_code) {
     char command_buffer[BUFSIZE];
     memset(buf,0,BUFSIZE);
     memset(command_buffer,0,BUFSIZE);
+
 	if ( cmd_code == ESTABLISH_AUDIO_AS_CLIENT_CMD )
 		sprintf(command_buffer,"/opt/tunnel/audio-on-as-client.sh");
 	if ( cmd_code == ESTABLISH_AUDIO_AS_SERVER_CMD )
 		sprintf(command_buffer,"/opt/tunnel/audio-on-as-server.sh");
 	if ( cmd_code == DISCONNECT_AUDIO_CMD )
 		sprintf(command_buffer,"/opt/tunnel/audio-off.sh");
-	
+	if ( cmd_code == TERMINATE_LOCAL_CMD )
+		sprintf(command_buffer,"/opt/tunnel/terminate.sh");
+
     FILE *fp;
     if ((fp = popen(command_buffer, "r")) == NULL) {
         log_error("[%d] Pipe open error.", getpid()); 
@@ -319,6 +324,9 @@ int main(int argc, char *argv[]) {
 			if ( strcmp(query_buf,"disconnect_audio") == 0 ) {
 				run_local_command(DISCONNECT_AUDIO_CMD);
 			}
+                        if ( strcmp(query_buf,"terminate_local") == 0 ) {
+                                run_local_command(TERMINATE_LOCAL_CMD);
+                        }
 			if ( strcmp(query_buf,"daemon_ping") == 0 ) {
 				sprintf(response_buf,"telemetryclient_is_alive");
 				sleep(1);
