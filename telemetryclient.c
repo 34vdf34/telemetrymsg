@@ -192,6 +192,11 @@ int query_server(char* query_buf, char* server_address, char* server_port, char*
 	binn_free(obj);
 		char received_msg[MSG_SIZE];
 		memset(received_msg, 0, MSG_SIZE);
+		/* Set timeout for socket read*/
+		struct timeval tv;
+		tv.tv_sec = 6;
+		tv.tv_usec = 0;
+		setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
 		if (read(sockfd, received_msg, MSG_SIZE) < 1) {
 			log_error("[%d] Receive error from server",getpid());
 			exit(EXIT_FAILURE);
