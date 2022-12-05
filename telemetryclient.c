@@ -165,7 +165,7 @@ int query_server(char* query_buf, char* server_address, char* server_port, char*
 	servaddr.sin_port = htons(atoi(server_port));
 	servaddr.sin_addr.s_addr = inet_addr(server_address);
 	
-	if ( connect_with_timeout(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr), 1500) < 0 ) {	
+	if ( connect_with_timeout(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr), 3000) < 0 ) {	
 		log_debug("[%d] Connection failed",getpid());
 		sprintf(response,"%s,offline",server_address);
 		log_debug("[%d] coult not connect, reply: %s ",getpid(),response);
